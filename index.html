@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>警報画像ジェネレーター (B4 14:9)</title>
+<style>
+  body {
+    background-color: #f4f4f4;
+    font-family: 'Helvetica Neue', sans-serif;
+    text-align: center;
+    padding: 10px;
+  }
+  input, button {
+    padding: 10px;
+    margin: 5px;
+    font-size: 16px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    width: 90%;
+    max-width: 400px;
+  }
+  button {
+    background-color: #d32f2f;
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+  button:hover {
+    background-color: #b71c1c;
+  }
+  canvas {
+    margin-top: 15px;
+    border-radius: 15px;
+    width: 100%;
+    max-width: 700px;  /* スマホでの見やすい最大幅 */
+    height: auto;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+  }
+</style>
+</head>
+<body>
+
+<h2>🌀 警報画像作成 (B4サイズ 14:9比率)</h2>
+
+<div id="cityList">
+  <input type="text" class="cityInput" placeholder="市区町村名 (例: 名古屋市)" />
+</div>
+
+<button onclick="addCity()">＋ 市町村を追加</button>
+<br />
+<button onclick="drawImage()">画像生成</button>
+<button onclick="downloadImage()">💾 保存</button>
+<button onclick="shareImage()">📤 共有</button>
+
+<br />
+<canvas id="canvas" width="1400" height="900"></canvas>
+
+<script>
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+
+  const CANVAS_WIDTH = 1400;
+  const CANVAS_HEIGHT = 900;
+
+  function addCity() {
+    const cityList = document.getElementById("cityList");
+    const input = document.createElement("input");
+    input.type = "text";
+    input.placeholder = "市区町村名";
+    input.classList.add("cityInput");
+    cityList.appendChild(input);
+  }
+
+  function drawImage() {
+    const cities = Array.from(document.querySelectorAll(".cityInput"))
+      .map(input => input.value.trim())
+      .filter(c => c !== "");
+
+    // 背景グラデーション
+    const gradient = ctx.createLinearGradient(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    gradient.addColorStop(0, "#8b0000");
+    gradient.addColorStop(0.5, "#d32f2f");
+    gradient.addColorStop(1, "#f44336");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+    // 影付きタイトル
+    ctx.fillStyle = "white";
+    ctx.textAlign = "center";
+    ctx.font = "bold 110px 'Noto Sans JP', sans-serif";
+    ctx.shadowColor = "rgba(0,0,0,0.6)";
+    ctx.shadowBlur = 10;
+    ctx.shadowOffsetX = 4;
+    ctx.shadowOffsetY = 4;
+    ctx.fillText("大雨特別警報", CANVAS_WIDTH / 2, 120);
+
+    // 影オフ
+    ctx.shadowColor = "transparent";
+
+    // サブタイトル
+    ctx.font = "bold 60px 'Noto Sans JP', sans-serif";
+    ctx.fillText("命を守る行動を!", CANVAS_WIDTH / 2, 190);
+
+    // 空白
+    const lineUnderY = 230;
+
+    // 線を引く（画像の左右端まで）
+    ctx.strokeStyle = "#fff";
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.moveTo(0, lineUnderY);
+    ctx.lineTo(CANVAS_WIDTH, lineUnderY);
+    ctx.stroke();
+
+    // 市町村名の白い枠（背景）画像の左右端から少し内側に
+    const marginSide = 40;  // 左右のマージンを40pxに設定
+    const boxX = marginSide;
+    const boxY = lineUnderY + 30;
+    const boxW = CANVAS_WIDTH - marginSide * 2;  // 両端のマージンを引く
+    const padding = 30;
+    const lineHeight = 60;   // 行間を広げた
+    const spaceBetween = 35;
+
+    // 自動改行用ロジック
+    ctx.font = "bold 40px 'Noto Sans JP', sans-serif";
+    ctx.textAlign = "left";
+
+    let lines = [];
+    let currentLine = [];
+    let currentWidth = 0;
+
+    cities.forEach(city => {
+      const textWidth = ctx.measureText(city).width;
+      const cityWidth = textWidth + spaceBetween;
+      if (currentWidth + cityWidth > boxW - padding * 2 && currentLine.length > 0) {
+        lines.push(currentLine);
+        currentLine = [city];
+        currentWidth = cityWidth;
+      } else {
+        currentLine.push(city);
+        currentWidth += cityWidth;
+      }
+    });
+    if (currentLine.length > 0) lines.push(currentLine);
+
+    const boxH = lines.length * lineHeight + padding * 2;
+
+    // 白背景枠を描画（角丸）
+    ctx.fillStyle = "rgba(255, 255, 255, 0.93)";
+    roundRect(ctx, boxX, boxY, boxW, boxH, 35, true, false);
+
+    // 市町村名の文字（黒色）
+    ctx.shadowColor = "transparent";
+    ctx.fillStyle = "#000000";
+
+    lines.forEach((line, rowIndex) => {
+      let x = boxX + padding;
+      const y = boxY + padding + (rowIndex + 1) * lineHeight - 10;
+      line.forEach(city => {
+        ctx.fillText(city, x, y);
+        x += ctx.measureText(city).width + spaceBetween;
+      });
+    });
+
+    // フッター
+    ctx.fillStyle = "white";
+    ctx.font = "28px 'Noto Sans JP', sans-serif";
+    ctx.textAlign = "left";
+    ctx.fillText("画像制作: EWC", 15, CANVAS_HEIGHT - 20);
+  }
+
+  function roundRect(ctx, x, y, w, h, r, fill, stroke) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+    if (fill) ctx.fill();
+    if (stroke) ctx.stroke();
+  }
+
+  function downloadImage() {
+    const link = document.createElement("a");
+    link.download = "alert_image_b4.png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  }
+
+  function shareImage() {
+    canvas.toBlob(blob => {
+      const file = new File([blob], "alert_image_b4.png", { type: "image/png" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({
+          files: [file],
+          title: "大雨特別警報",
+          text: "命を守るための最善の行動を！",
+        });
+      } else {
+        alert("共有機能がこの端末で利用できません。画像を保存して共有してください。");
+      }
+    });
+  }
+
+  window.onload = drawImage;
+</script>
+
+</body>
+</html>
