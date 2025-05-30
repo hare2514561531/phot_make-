@@ -33,7 +33,7 @@
     margin-top: 15px;
     border-radius: 15px;
     width: 100%;
-    max-width: 700px;  /* スマホでの見やすい最大幅 */
+    max-width: 700px;
     height: auto;
     box-shadow: 0 6px 16px rgba(0,0,0,0.2);
   }
@@ -52,6 +52,7 @@
 <button onclick="drawImage()">画像生成</button>
 <button onclick="downloadImage()">💾 保存</button>
 <button onclick="shareImage()">📤 共有</button>
+<button onclick="openInBrowser()">🌐 ブラウザで開く</button>
 
 <br />
 <canvas id="canvas" width="1400" height="900"></canvas>
@@ -77,7 +78,6 @@
       .map(input => input.value.trim())
       .filter(c => c !== "");
 
-    // 背景グラデーション
     const gradient = ctx.createLinearGradient(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     gradient.addColorStop(0, "#8b0000");
     gradient.addColorStop(0.5, "#d32f2f");
@@ -85,7 +85,6 @@
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
-    // 影付きタイトル
     ctx.fillStyle = "white";
     ctx.textAlign = "center";
     ctx.font = "bold 110px 'Noto Sans JP', sans-serif";
@@ -95,17 +94,12 @@
     ctx.shadowOffsetY = 4;
     ctx.fillText("大雨特別警報", CANVAS_WIDTH / 2, 120);
 
-    // 影オフ
     ctx.shadowColor = "transparent";
-
-    // サブタイトル
     ctx.font = "bold 60px 'Noto Sans JP', sans-serif";
     ctx.fillText("命を守る行動を!", CANVAS_WIDTH / 2, 190);
 
-    // 空白
     const lineUnderY = 230;
 
-    // 線を引く（画像の左右端まで）
     ctx.strokeStyle = "#fff";
     ctx.lineWidth = 7;
     ctx.beginPath();
@@ -113,16 +107,14 @@
     ctx.lineTo(CANVAS_WIDTH, lineUnderY);
     ctx.stroke();
 
-    // 市町村名の白い枠（背景）画像の左右端から少し内側に
-    const marginSide = 40;  // 左右のマージンを40pxに設定
+    const marginSide = 40;
     const boxX = marginSide;
     const boxY = lineUnderY + 30;
-    const boxW = CANVAS_WIDTH - marginSide * 2;  // 両端のマージンを引く
+    const boxW = CANVAS_WIDTH - marginSide * 2;
     const padding = 30;
-    const lineHeight = 60;   // 行間を広げた
+    const lineHeight = 60;
     const spaceBetween = 35;
 
-    // 自動改行用ロジック
     ctx.font = "bold 40px 'Noto Sans JP', sans-serif";
     ctx.textAlign = "left";
 
@@ -146,11 +138,9 @@
 
     const boxH = lines.length * lineHeight + padding * 2;
 
-    // 白背景枠を描画（角丸）
     ctx.fillStyle = "rgba(255, 255, 255, 0.93)";
     roundRect(ctx, boxX, boxY, boxW, boxH, 35, true, false);
 
-    // 市町村名の文字（黒色）
     ctx.shadowColor = "transparent";
     ctx.fillStyle = "#000000";
 
@@ -163,7 +153,6 @@
       });
     });
 
-    // フッター
     ctx.fillStyle = "white";
     ctx.font = "28px 'Noto Sans JP', sans-serif";
     ctx.textAlign = "left";
@@ -206,6 +195,11 @@
         alert("共有機能がこの端末で利用できません。画像を保存して共有してください。");
       }
     });
+  }
+
+  function openInBrowser() {
+    const url = "https://example.com"; // ← 開きたいURLをここに設定
+    window.open(url, "_blank");
   }
 
   window.onload = drawImage;
